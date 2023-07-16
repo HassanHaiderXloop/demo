@@ -1,110 +1,23 @@
-// import React, { useEffect, useState } from 'react';
-// import './Dashboard.css';
-// import jsPDF from 'jspdf';
-// import 'jspdf-autotable';
-
-// const Dashboard = () => {
-//   const [userData, setUserData] = useState([]);
-//   const [currentIndex, setCurrentIndex] = useState(0);
-
-//   useEffect(() => {
-//     fetchData();
-
-//     const intervalId = setInterval(() => {
-//       setCurrentIndex((prevIndex) => prevIndex + 1);
-//     }, 2 * 1000); // 10-second interval
-
-//     return () => clearInterval(intervalId);
-//   }, []);
-
-//   const fetchData = async () => {
-//     try {
-//       const response = await fetch('https://jsonplaceholder.typicode.com/users');
-//       const jsonData = await response.json();
-//       setUserData(jsonData);
-//     } catch (error) {
-//       console.error('Error fetching data:', error);
-//     }
-//   };
-
-
-//   const downloadPDF = async () => {
-//     if (userData.length > 0) {
-//       const doc = new jsPDF();
-//       const response = await fetch('http://192.168.4.252:5000/');
-//       const jsonData = await response.json();
-
-//       const columns = Object.keys(jsonData[0]);
-//       const tableData = jsonData.map((item) => Object.values(item));
-
-//       doc.autoTable({
-//         head: [columns],
-//         body: tableData
-//       });
-
-//       doc.save('dashboard.pdf');
-//     }
-//   };
-
-//   return (
-//     <div className="dashboard">
-//       <h1>Dashboard</h1>
-//       {userData.length > 0 ? (
-//         <table>
-//           <thead>
-//             <tr>
-//               <th>Name</th>
-//               <th>Username</th>
-//               <th>Email</th>
-//               <th >Action</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {userData.slice(0, currentIndex + 1).map((user, index) => (
-//               <tr key={index}>
-//                 <td>{user.name}</td>
-//                 <td>{user.username}</td>
-//                 <td>{user.email}</td>
-//                 <td className='btn'>
-//                   <button onClick={() => downloadPDF(user)}>Download</button>
-//                 </td>
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-//       ) : (
-//         <p>Loading...</p>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default Dashboard;
- 
-
-///////////////////////////////////////////////////////////////////
-
-// Jitnaw office mey hoa tha yay wo code hey.
-
 import React, { useEffect, useState } from 'react';
 import './Dashboard.css';
-import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-
 
 const Dashboard = () => {
   const [userData, setUserData] = useState([]);
+  const [csvData, setCsvData] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    fetchData();
-
-    const intervalId = setInterval(() => {
-      setCurrentIndex((prevIndex) => prevIndex + 1);
-    }, 2 * 1000); // 10-second interval
-
-    return () => clearInterval(intervalId);
-  }, []);
+        fetchData();
+        fetchDataa();
+    
+        const intervalId = setInterval(() => {
+          setCurrentIndex((prevIndex) => prevIndex + 1);
+        }, 5 * 1000); // 10-second interval
+    
+        return () => clearInterval(intervalId);
+      }, []);
+    
 
   const fetchData = async () => {
     try {
@@ -116,42 +29,40 @@ const Dashboard = () => {
     }
   };
 
-
-  const downloadPDF = async (user) => {
-    if (userData.length > 0) {
-      const doc = new jsPDF();
-  
-      try {
-        const response = await fetch('http://172.190.91.62:5000/');
-        const textData = await response.text();
-  
-        if (textData) {
-          let jsonDataa = JSON.parse(textData);
-          const jsonData = jsonDataa.job_data;
-  
-          if (Array.isArray(jsonData) && jsonData.length > 0) {
-            const columns = Object.keys(jsonData[0]);
-            const tableData = jsonData.map((item) => Object.values(item));
-  
-            doc.autoTable({
-              head: [columns],
-              body: tableData,
-            });
-  
-            doc.save('dashboard.pdf');
-          } else {
-            console.error('Invalid data from API');
-          }
-        } else {
-          console.error('Empty response from API');
-        }
-      } catch (error) {
-        console.error('Error fetching PDF data:', error);
-      }
+  const fetchDataa = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:5000");
+      const data = await response.json();
+      const csvData = JSON.stringify(data, null, 2);
+      setCsvData(csvData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
     }
   };
-  
-  
+
+  const downloadCSV = () => {
+    const href = `data:text/csv;charset=utf-8,${encodeURIComponent(
+      csvData
+    )}`;
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = 'filename.csv';
+    a.click();
+  };
+
+  const formatCSV = (csvData) => {
+    const lines = csvData.split('\n');
+    const formattedLines = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const formattedLine = line.split(',');
+      formattedLine = formattedLine.map((cell) => {
+        return cell.trim();
+      });
+      formattedLines.push(formattedLine);
+    }
+    return formattedLines.join('\n');
+  };
 
   return (
     <div className="dashboard">
@@ -172,8 +83,15 @@ const Dashboard = () => {
                 <td>{user.name}</td>
                 <td>{user.username}</td>
                 <td>{user.email}</td>
-                <td className="btn">
-                  <button onClick={() => downloadPDF(user)}>Download</button>
+                <td>
+                  <button
+                    onClick={() => {
+                      downloadCSV();
+                    }}
+                    className="btn"
+                  >
+                    download
+                  </button>
                 </td>
               </tr>
             ))}
@@ -189,59 +107,54 @@ const Dashboard = () => {
 export default Dashboard;
 
 
-////////
 
-// FOR THE CSV
+// // Jitnaw office mey hoa tha yay wo code hey.
 
-
-// import React, { useState } from 'react';
+// import React, { useEffect, useState } from 'react';
+// import './Dashboard.css';
 // import jsPDF from 'jspdf';
 // import 'jspdf-autotable';
 
-// const Dashboard = ({ userData }) => {
-//   const downloadCSV = async (user) => {
-//     if (userData && userData.length > 0) {
-//       try {
-//         const response = await fetch('http://192.168.4.252:5000/');
-//         const jsonData = await response.json();
 
-//         if (Array.isArray(jsonData) && jsonData.length > 0) {
-//           const csvData = convertJSONtoCSV(jsonData);
+// const Dashboard = () => {
+//   const [userData, setUserData] = useState([]);
+//   const [dataInCSV, setDataInCSV] = useState("");
+//   const [currentIndex, setCurrentIndex] = useState(0);
 
-//           // Download the CSV file
-//           const blob = new Blob([csvData], { type: 'text/csv' });
-//           const url = URL.createObjectURL(blob);
-//           const link = document.createElement('a');
-//           link.href = url;
-//           link.setAttribute('download', 'data.csv');
-//           document.body.appendChild(link);
-//           link.click();
-//         } else {
-//           console.error('Invalid data from API');
-//         }
-//       } catch (error) {
-//         console.error('Error fetching JSON data:', error);
-//       }
+//   useEffect(() => {
+//     fetchData();
+//     fetchDataa();
+
+//     const intervalId = setInterval(() => {
+//       setCurrentIndex((prevIndex) => prevIndex + 1);
+//     }, 5 * 1000); // 10-second interval
+
+//     return () => clearInterval(intervalId);
+//   }, []);
+
+//   const fetchData = async () => {
+//     try {
+//       const response = await fetch('https://jsonplaceholder.typicode.com/users');
+//       const jsonData = await response.json();
+//       setUserData(jsonData);
+//     } catch (error) {
+//       console.error('Error fetching data:', error);
 //     }
 //   };
-
-//   const convertJSONtoCSV = (jsonData) => {
-//     const columns = Object.keys(jsonData[0]);
-//     const csvRows = [];
-//     csvRows.push(columns.join(','));
-
-//     for (const item of jsonData) {
-//       const values = columns.map((column) => item[column]);
-//       csvRows.push(values.join(','));
+//   const fetchDataa = async () => {
+//     try {
+//       const response = await fetch("http://127.0.0.1:5000");
+//       const data = await response.text();
+//       setDataInCSV(data);
+//     } catch (error) {
+//       console.error("Error fetching data:", error);
 //     }
-
-//     return csvRows.join('\n');
 //   };
 
 //   return (
 //     <div className="dashboard">
 //       <h1>Dashboard</h1>
-//       {userData && userData.length > 0 ? (
+//       {userData.length > 0 ? (
 //         <table>
 //           <thead>
 //             <tr>
@@ -252,13 +165,21 @@ export default Dashboard;
 //             </tr>
 //           </thead>
 //           <tbody>
-//             {userData.map((user, index) => (
+//             {userData.slice(0, currentIndex + 1).map((user, index) => (
 //               <tr key={index}>
 //                 <td>{user.name}</td>
 //                 <td>{user.username}</td>
 //                 <td>{user.email}</td>
 //                 <td className="btn">
-//                   <button onClick={() => downloadCSV(user)}>Download</button>
+                  
+//                   {dataInCSV && (
+//                     <a
+//                       href={`data:text/csv;charset=utf-8,${encodeURIComponent(dataInCSV)}`}
+//                       download="filename.csv"
+//                     >
+//                       download
+//                     </a>
+//                   )}
 //                 </td>
 //               </tr>
 //             ))}
@@ -270,5 +191,135 @@ export default Dashboard;
 //     </div>
 //   );
 // };
+
+// export default Dashboard;
+
+////////////////////
+// import React, { useEffect, useState } from 'react';
+// import './Dashboard.css';
+// import jsPDF from 'jspdf';
+// import 'jspdf-autotable';
+
+// const Dashboard = () => {
+//   const [userData, setUserData] = useState([]);
+//   const [csvData, setCsvData] = useState("");
+//   const [currentIndex, setCurrentIndex] = useState(0);
+
+//   useEffect(() => {
+//     fetchData();
+//     fetchDataa();
+
+//     const intervalId = setInterval(() => {
+//       setCurrentIndex((prevIndex) => prevIndex + 1);
+//     }, 5 * 1000); // 10-second interval
+
+//     return () => clearInterval(intervalId);
+//   }, []);
+
+//   const fetchData = async () => {
+//     try {
+//       const response = await fetch('https://jsonplaceholder.typicode.com/users');
+//       const jsonData = await response.json();
+//       setUserData(jsonData);
+//     } catch (error) {
+//       console.error('Error fetching data:', error);
+//     }
+//   };
+  //............................................................. koi ek chalao
+  // const fetchDataa = async () => {
+  //   try {
+  //     const response = await fetch("http://127.0.0.1:5000");
+  //     const data = await response.text();
+  //     setDataInCSV(data);
+  //   } catch (error) {
+  //     console.error("Error fetching data:", error);
+  //   }
+  // };
+  // const downloadCSV = () => {
+  //   const href = `data:text/csv;charset=utf-8,${encodeURIComponent(dataInCSV)}`;
+  //   const a = document.createElement('a');
+  //   a.href = href;
+  //   a.download = 'filename.csv';
+  //   a.click();
+  // };
+  
+//...................................................
+// const fetchDataa = async () => {
+//   try {
+//     const response = await fetch("http://127.0.0.1:5000");
+//     const data = await response.json();
+//     const csvData = JSON.stringify(data, null, 2);
+//     const formattedData = formatCSV(csvData);
+//     csvData = formattedData;
+//   } catch (error) {
+//     console.error("Error fetching data:", error);
+//   }
+// };
+
+// const downloadCSV = () => {
+//   const href = `data:text/csv;charset=utf-8,${encodeURIComponent(
+//     csvData
+//   )}`;
+//   const a = document.createElement('a');
+//   a.href = href;
+//   a.download = 'filename.csv';
+//   a.click();
+// };
+
+// const formatCSV = (csvData) => {
+//   const lines = csvData.split('\n');
+//   const formattedLines = [];
+//   for (let i = 0; i < lines.length; i++) {
+//     const line = lines[i];
+//     const formattedLine = line.split(',');
+//     formattedLine = formattedLine.map((cell) => {
+//       return cell.trim();
+//     });
+//     formattedLines.push(formattedLine);
+//   }
+//   return formattedLines.join('\n');
+// };
+
+  //....................................................
+//   return (
+//     <div className="dashboard">
+//       <h1>Dashboard</h1>
+//       {userData.length > 0 ? (
+//         <table>
+//           <thead>
+//             <tr>
+//               <th>Name</th>
+//               <th>Username</th>
+//               <th>Email</th>
+//               <th>Action</th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             {userData.slice(0, currentIndex + 1).map((user, index) => (
+//               <tr key={index}>
+//                 <td>{user.name}</td>
+//                 <td>{user.username}</td>
+//                 <td>{user.email}</td>
+//                 <td>
+//                   <button
+//                     onClick={() => {
+//                       downloadCSV();
+//                     }}
+//                     className="btn"
+//                   >
+//                     download
+//                   </button>
+//                 </td>
+//               </tr>
+//             ))}
+//           </tbody>
+//         </table>
+//       ) : (
+//         <p>Loading...</p>
+//       )}
+//     </div>
+//   );
+// };
+
 
 // export default Dashboard;
